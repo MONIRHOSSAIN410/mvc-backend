@@ -6,6 +6,12 @@ import { fetchCategories } from "../redux/slices/productSlice.js";
 import SectionHeader from "./SectionHeader.jsx";
 import InfiniteMarquee from "./InfiniteMarquee.jsx";
 
+/**
+ * "Shop by Category" as a nonstop carousel.
+ *
+ * Categories come from the API and fall back to the bundled list, so the strip
+ * grows by itself when a new category is added to the database.
+ */
 export default function FeaturedCategories() {
   const dispatch = useDispatch();
   const fromApi = useSelector((s) => s.products.categories);
@@ -16,6 +22,7 @@ export default function FeaturedCategories() {
 
   const categories = useMemo(() => {
     const list = fromApi?.length ? fromApi : CATEGORIES;
+    // Match every API category with its picture from the bundled catalogue.
     return list.map((c) => ({
       ...c,
       image: c.image || CATEGORIES.find((x) => x.slug === c.slug)?.image,
@@ -26,8 +33,8 @@ export default function FeaturedCategories() {
   if (!categories.length) return null;
 
   return (
-    <section className="my-12">
-      <div className="container-app mb-6">
+    <section className="mt-10">
+      <div className="container-app">
         <SectionHeader
           title="Shop by Category"
           subtitle="Find what you need, faster"
@@ -35,38 +42,31 @@ export default function FeaturedCategories() {
         />
       </div>
 
-      {/* Non-stop carousel that never pauses */}
-      <InfiniteMarquee speed={30} pauseOnHover={false}>
+      {/* Keeps running even while the pointer is over it. */}
+      <InfiniteMarquee className="px-4 sm:px-6 lg:px-8" pauseOnHover={false}>
         {categories.map((c) => (
           <Link
             key={c.slug}
             to={`/category/${c.slug}`}
-            className="group relative block h-36 w-48 shrink-0 overflow-hidden rounded-2xl border border-slate-200/80 bg-slate-100 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg dark:border-slate-800 dark:bg-slate-900 sm:h-44 sm:w-60"
+            className="zoom-img group relative block h-32 w-44 shrink-0 overflow-hidden
+                       rounded-xl shadow-card transition-shadow hover:shadow-lift
+                       sm:h-40 sm:w-56"
           >
-            {/* Image with smooth zoom effect */}
             <img
               src={c.image}
               alt={c.name}
-              className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-110"
+              className="h-full w-full object-cover"
               loading="lazy"
               decoding="async"
             />
-
-            {/* Gradient Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/40 to-transparent transition-opacity duration-300 group-hover:opacity-90" />
-
-            {/* Content */}
-            <div className="absolute inset-x-0 bottom-0 p-4 text-white">
-              <p className="flex items-center gap-1.5 text-base font-semibold tracking-tight text-white drop-shadow-sm">
-                <span>{c.icon}</span>
-                <span>{c.name}</span>
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/25 to-transparent" />
+            <div className="absolute inset-x-0 bottom-0 p-3 text-white">
+              <p className="text-sm font-semibold drop-shadow">
+                {c.icon} {c.name}
               </p>
-              <div className="mt-1 flex items-center justify-between text-xs text-slate-300">
-                <span>{c.productCount ? `${c.productCount} items` : "Explore"}</span>
-                <span className="font-medium text-brand-300 transition-transform duration-300 group-hover:translate-x-1">
-                  Shop now →
-                </span>
-              </div>
+              <p className="text-[11px] text-white/80">
+                {c.productCount ? `${c.productCount} items · ` : ""}Shop now →
+              </p>
             </div>
           </Link>
         ))}

@@ -1,53 +1,21 @@
-import React from "react";
-
 /**
- * Production-grade infinite marquee component.
- * Duplicates children dynamically to guarantee seamless 100% loop transitions.
+ * Nonstop carousel: the track holds two copies of the children and slides
+ * exactly half its width, so the loop is seamless and never stops.
+ * Hovering pauses it; users who ask for reduced motion get a normal scroller.
  */
-export default function InfiniteMarquee({
-  children,
-  className = "",
-  speed = 30, // Loop duration in seconds
-  pauseOnHover = false,
-  direction = "left", // 'left' | 'right'
-}) {
-  const childArray = React.Children.toArray(children);
-
-  // Safety fallback if no children passed
-  if (!childArray.length) return null;
-
-  // Multiply items if category list is small to ensure track overflows properly
-  const itemsNeeded = Math.max(2, Math.ceil(10 / childArray.length));
-  const repeatedChildren = Array(itemsNeeded).fill(childArray).flat();
-
+export default function InfiniteMarquee({ children, className = "" }) {
   return (
-    <div
-      className={`group relative flex overflow-hidden select-none [mask-image:linear-gradient(to_right,transparent,black_8%,black_92%,transparent)] ${className}`}
-    >
-      {/* Primary Track */}
-      <div
-        className={`flex min-w-full shrink-0 items-center justify-around gap-4 py-2 ${
-          direction === "right" ? "animate-marquee-reverse" : "animate-marquee"
-        } ${pauseOnHover ? "group-hover:[animation-play-state:paused]" : ""}`}
-        style={{ animationDuration: `${speed}s` }}
-      >
-        {repeatedChildren.map((item, idx) => (
-          <React.Fragment key={`orig-${idx}`}>{item}</React.Fragment>
-        ))}
+    <div className={`marquee-pause relative overflow-hidden ${className}`}>
+      <div className="marquee-track flex w-max gap-3 sm:gap-4 motion-reduce:animate-none">
+        <div className="flex gap-3 sm:gap-4">{children}</div>
+        <div className="flex gap-3 sm:gap-4" aria-hidden="true">
+          {children}
+        </div>
       </div>
 
-      {/* Duplicated Track (Prevents white space / jump gaps) */}
-      <div
-        aria-hidden="true"
-        className={`flex min-w-full shrink-0 items-center justify-around gap-4 py-2 ${
-          direction === "right" ? "animate-marquee-reverse" : "animate-marquee"
-        } ${pauseOnHover ? "group-hover:[animation-play-state:paused]" : ""}`}
-        style={{ animationDuration: `${speed}s` }}
-      >
-        {repeatedChildren.map((item, idx) => (
-          <React.Fragment key={`dup-${idx}`}>{item}</React.Fragment>
-        ))}
-      </div>
+      {/* soft fade at both edges */}
+      <div className="pointer-events-none absolute inset-y-0 left-0 w-10 bg-gradient-to-r from-slate-50 to-transparent dark:from-slate-950" />
+      <div className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-slate-50 to-transparent dark:from-slate-950" />
     </div>
   );
 }

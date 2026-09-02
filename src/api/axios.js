@@ -1,7 +1,13 @@
 import axios from "axios";
 import { CATEGORIES, filterProducts, findProduct } from "../data/catalog.js";
 
-const api = axios.create({ baseURL: "/api" });
+// In development Vite proxies /api to the local server (see vite.config.js).
+// On a deployed site set VITE_API_URL to the backend's address, e.g.
+// https://cookme-api.onrender.com/api — without it the shop runs on its
+// bundled offline catalogue.
+const api = axios.create({
+  baseURL: import.meta.env.VITE_API_URL || "/api",
+});
 
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("cookme-token");
