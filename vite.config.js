@@ -17,11 +17,16 @@ export default defineConfig({
     },
   },
   server: {
-    port: 5000,
+    port: 5173,
     proxy: {
       "/api": {
+<<<<<<< HEAD
         target: "http://localhost:5000",
+=======
+        target: "https://mvc-backend-b5wn.vercel.app", // Removed trailing slash
+>>>>>>> 7ade7f6 (Change server port and fix proxy target URL)
         changeOrigin: true,
+        secure: false,
       },
     },
   },
