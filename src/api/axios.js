@@ -1,12 +1,25 @@
 import axios from "axios";
 import { CATEGORIES, filterProducts, findProduct } from "../data/catalog.js";
 
-// In development Vite proxies /api to the local server (see vite.config.js).
-// On a deployed site set VITE_API_URL to the backend's address, e.g.
-// https://cookme-api.onrender.com/api — without it the shop runs on its
-// bundled offline catalogue.
+/**
+ * Where the API lives.
+ *
+ * - In development Vite proxies /api to the local server (vite.config.js).
+ * - On a deployed site the default is the CookMe API on Vercel.
+ * - VITE_API_URL overrides both, so a preview or a second backend needs no
+ *   code change — set it in Vercel → Settings → Environment Variables and
+ *   redeploy (Vite bakes the value in at build time).
+ */
+const DEPLOYED_API = "https://mvc-backend-b5wn.vercel.app/api";
+
+const baseURL =
+  import.meta.env.VITE_API_URL || (import.meta.env.PROD ? DEPLOYED_API : "/api");
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "/api",
+  baseURL,
+  // A serverless function that cannot reach its database will otherwise keep
+  // the page waiting; this hands control to the offline catalogue instead.
+  timeout: 12000,
 });
 
 api.interceptors.request.use((config) => {
