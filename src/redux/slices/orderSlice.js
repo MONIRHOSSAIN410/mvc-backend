@@ -1,5 +1,16 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import api from "../../api/axios.js";
+import {
+  createLocalOrder,
+  findLocalOrder,
+  getLocalOrders,
+} from "../../data/localOrders.js";
+
+/** True when the request never reached a working API. */
+const apiUnreachable = (err) => {
+  const status = err.response?.status;
+  return !err.response || err.code === "ECONNABORTED" || status === 503 || status >= 500;
+};
 
 /** Places the order and returns the receipt. */
 export const placeOrder = createAsyncThunk(
@@ -9,10 +20,18 @@ export const placeOrder = createAsyncThunk(
       const { data } = await api.post("/orders", payload);
       return data.order;
     } catch (err) {
-      return rejectWithValue(
-        err.response?.data?.message ||
-          "Could not place the order. Make sure the CookMe server is running."
-      );
+      // No backend, or a backend with no database: keep the order in the
+      // browser so the customer still gets an order number and a receipt.
+      if (apiUnreachable(err)) {
+        try {
+          return createLocalOrder(payload);
+        } catch (localErr) {
+          return rejectWithValue(localErr.message);
+        }
+      }
+      // A real answer from the server — show what it said (missing field,
+      // wrong TrxID, and so on).
+      return rejectWithValue(err.response?.data?.message || "Could not place the order.");
     }
   }
 );
@@ -21,6 +40,10 @@ export const placeOrder = createAsyncThunk(
 export const fetchOrder = createAsyncThunk(
   "orders/fetchOne",
   async (orderNumber, { rejectWithValue }) => {
+    // An order placed in this browser is here, not on the server.
+    const local = findLocalOrder(orderNumber);
+    if (local) return local;
+
     try {
       const { data } = await api.get(`/orders/${orderNumber}`);
       return data.order;
@@ -34,13 +57,15 @@ export const fetchOrder = createAsyncThunk(
 export const fetchMyOrders = createAsyncThunk(
   "orders/mine",
   async (_, { rejectWithValue }) => {
+    const local = getLocalOrders();
     try {
       const { data } = await api.get("/orders/mine/list");
-      return data.orders;
+      // Orders kept in this browser sit alongside the ones from the server.
+      const serverNumbers = new Set((data.orders || []).map((o) => o.orderNumber));
+      return [...local.filter((o) => !serverNumbers.has(o.orderNumber)), ...(data.orders || [])];
     } catch (err) {
-      return rejectWithValue(
-        err.response?.data?.message || "Could not load your orders"
-      );
+      if (apiUnreachable(err)) return local;
+      return rejectWithValue(err.response?.data?.message || "Could not load your orders");
     }
   }
 );
